@@ -1,0 +1,7 @@
+<RCC>
+  <qresource>
+    <file>res/wallpaper.png</file>
+    <file>res/exit.png</file>
+    <file>res/cozy_office.ico</file>
+  </qresource>
+</RCC>
