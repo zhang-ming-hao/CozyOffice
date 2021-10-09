@@ -4,6 +4,7 @@
 """
 惬意办工
 v0.1 实现壁纸切换功能
+v0.2 实现简单的番茄钟
 """
 
 import os
@@ -19,6 +20,7 @@ from PySide2.QtGui import QIcon, QCursor
 from PySide2.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QMenu, QAction, QFileDialog, QMessageBox
 
 import resources_rc
+from tomato_dialog import TomatoDialog
 
 
 class MainWindow(QMainWindow):
@@ -150,6 +152,11 @@ class MainWindow(QMainWindow):
             wallpaper.addAction(setup)
             setup.triggered.connect(self.set_wallpaper_path)
 
+        # 番茄钟
+        tomato = QAction(QIcon(":res/tomato.png"), "番茄钟", self)
+        tomato.triggered.connect(self.show_tomato_dialog)
+        menu.addAction(tomato)
+
         # 分隔
         menu.addSeparator()
 
@@ -242,9 +249,15 @@ class MainWindow(QMainWindow):
         """删除当前壁纸"""
 
         if QMessageBox.question(self, '确认', '是否删除当前壁纸？') == QMessageBox.StandardButton.Yes:
-            self.papers[self.cur_classify].remove(self.cur_img)
+            self.wallpapers[self.cur_classify].remove(self.cur_wallpaper)
             os.remove(self.cur_wallpaper)
             self.show_paper()
+
+    def show_tomato_dialog(self):
+        """显示番茄钟对话框"""
+
+        dlg = TomatoDialog()
+        dlg.exec_()
 
 
 def main():

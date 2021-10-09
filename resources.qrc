@@ -1,5 +1,8 @@
 <RCC>
   <qresource>
+    <file>res/resting.png</file>
+    <file>res/working.png</file>
+    <file>res/tomato.png</file>
     <file>res/wallpaper.png</file>
     <file>res/exit.png</file>
     <file>res/cozy_office.ico</file>
