@@ -53,6 +53,9 @@ class MainWindow(QMainWindow):
         self.sys_tray.setToolTip("惬意办工")
         self.sys_tray.show()
 
+        # 番茄钟
+        self.tomato_dlg = TomatoDialog()
+
         # 托盘菜单
         self.menu = None
         self.sys_tray.activated.connect(self.show_menu)
@@ -256,8 +259,7 @@ class MainWindow(QMainWindow):
     def show_tomato_dialog(self):
         """显示番茄钟对话框"""
 
-        dlg = TomatoDialog()
-        dlg.exec_()
+        self.tomato_dlg.show()
 
 
 def main():

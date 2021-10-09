@@ -90,7 +90,7 @@ class Ui_TomatoTime(object):
         self.lcd.setObjectName(u"lcd")
         self.lcd.setStyleSheet(u"border: 1px solid green; color: green;")
         self.lcd.setSmallDecimalPoint(False)
-        self.lcd.setDigitCount(10)
+        self.lcd.setDigitCount(5)
         self.lcd.setSegmentStyle(QLCDNumber.Flat)
 
         self.gridLayout.addWidget(self.lcd, 3, 0, 1, 3)

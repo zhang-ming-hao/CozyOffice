@@ -61,7 +61,7 @@ class Ui_StartTomato(object):
         self.work_time = QSpinBox(self.widget_2)
         self.work_time.setObjectName(u"work_time")
         self.work_time.setMinimum(1)
-        self.work_time.setMaximum(999)
+        self.work_time.setMaximum(99)
         self.work_time.setValue(25)
 
         self.gridLayout_2.addWidget(self.work_time, 1, 1, 1, 1)

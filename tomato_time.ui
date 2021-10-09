@@ -150,7 +150,7 @@
          <bool>false</bool>
         </property>
         <property name="digitCount">
-         <number>10</number>
+         <number>5</number>
         </property>
         <property name="segmentStyle">
          <enum>QLCDNumber::Flat</enum>
