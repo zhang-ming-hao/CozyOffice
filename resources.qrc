@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>res/note.png</file>
     <file>res/resting.png</file>
     <file>res/working.png</file>
     <file>res/tomato.png</file>

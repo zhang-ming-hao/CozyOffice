@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-番茄钟对话框
+惬意番茄钟对话框
 """
 
+import configparser
 from PySide2.QtCore import Qt, QTimer
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QDialog, QSystemTrayIcon
@@ -14,7 +15,7 @@ from tomato_dialog_ui import Ui_TomatoDialog
 
 
 class TomatoDialog(QDialog):
-    """番茄钟对话框"""
+    """惬意番茄钟对话框"""
 
     def __init__(self):
         """构造函数"""
@@ -39,23 +40,33 @@ class TomatoDialog(QDialog):
         self.ui.stackedWidget.setCurrentIndex(0)
         self.setWindowFlags(Qt.Dialog | Qt.WindowCloseButtonHint | Qt.MSWindowsFixedSizeDialogHint)
 
+        # 加载配置项
+        self.ui.start_page.ui.work_time.setValue(qApp.cfg["tomato"]["work"])
+        self.ui.start_page.ui.rest_time.setValue(qApp.cfg["tomato"]["rest"])
+
         # 连接信号与槽
         self.timer.timeout.connect(self.on_timer)
         self.ui.start_page.ui.start_btn.clicked.connect(self.start)
         self.ui.time_page.ui.end_btn.clicked.connect(self.end)
 
     def start(self):
-        """开始番茄钟"""
+        """开始惬意番茄钟"""
 
-        self.work_time = self.ui.start_page.ui.work_time.value() * 60
-        self.rest_time = self.ui.start_page.ui.rest_time.value() * 60
+        # 写入配置文件
+        qApp.cfg["tomato"]["work"] = self.ui.start_page.ui.work_time.value()
+        qApp.cfg["tomato"]["rest"] = self.ui.start_page.ui.rest_time.value()
+        qApp.save_config()
+
+        # 同步界面显示
+        self.work_time = qApp.cfg["tomato"]["work"] * 60
+        self.rest_time = qApp.cfg["tomato"]["rest"] * 60
 
         self.ui.time_page.ui.work_time.setText(self.ui.start_page.ui.work_time.text())
         self.ui.time_page.ui.rest_time.setText(self.ui.start_page.ui.rest_time.text())
 
         self.sys_tray = QSystemTrayIcon(self)  # 创建托盘
         self.sys_tray.setIcon(QIcon(":res/working.png"))  # 设置托盘图标
-        self.sys_tray.setToolTip("番茄钟-工作中")
+        self.sys_tray.setToolTip("惬意番茄钟-工作中")
         self.sys_tray.show()
         self.sys_tray.activated.connect(self.show)
 
@@ -63,11 +74,11 @@ class TomatoDialog(QDialog):
         self.start_work()
 
     def end(self):
-        """停止番茄钟"""
+        """停止惬意番茄钟"""
 
         self.ui.stackedWidget.setCurrentIndex(0)
         self.setWindowIcon(QIcon(":res/tomato.png"))
-        self.setWindowTitle("番茄钟-未开始")
+        self.setWindowTitle("惬意番茄钟-未开始")
 
         self.is_working = False
         self.is_resting = False
@@ -80,36 +91,36 @@ class TomatoDialog(QDialog):
 
         # 设置窗口
         self.ui.time_page.ui.status.setPixmap(":res/working.png")
-        self.setWindowTitle("番茄钟-工作中")
+        self.setWindowTitle("惬意番茄钟-工作中")
 
         # 设置托盘
         self.sys_tray.setIcon(QIcon(":res/working.png"))
-        self.sys_tray.setToolTip("番茄钟-工作中")
+        self.sys_tray.setToolTip("惬意番茄钟-工作中")
 
         self.is_working = True
         self.is_resting = False
         self.cur_time = self.work_time
 
         toaster = ToastNotifier()
-        toaster.show_toast("番茄钟", f"开始专注工作{int(self.work_time / 60)}分钟！", duration=5, threaded=True)
+        toaster.show_toast("惬意番茄钟", f"开始专注工作{int(self.work_time / 60)}分钟！", icon_path="cozy_office.ico", duration=5, threaded=True)
 
     def start_rest(self):
         """设置状态为休息中"""
 
         # 设置窗口
         self.ui.time_page.ui.status.setPixmap(":res/resting.png")
-        self.setWindowTitle("番茄钟-休息中")
+        self.setWindowTitle("惬意番茄钟-休息中")
 
         # 设置托盘
         self.sys_tray.setIcon(QIcon(":res/resting.png"))
-        self.sys_tray.setToolTip("番茄钟-休息中")
+        self.sys_tray.setToolTip("惬意番茄钟-休息中")
 
         self.is_working = False
         self.is_resting = True
         self.cur_time = self.rest_time
 
         toaster = ToastNotifier()
-        toaster.show_toast("番茄钟", f"休息{int(self.rest_time / 60)}分钟。", duration=5, threaded=True)
+        toaster.show_toast("惬意番茄钟", f"休息{int(self.rest_time / 60)}分钟。", icon_path="cozy_office.ico", duration=5, threaded=True)
 
     def on_timer(self):
         """计时器槽"""

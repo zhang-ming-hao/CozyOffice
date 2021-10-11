@@ -21,6 +21,7 @@ from PySide2.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QMenu,
 
 import resources_rc
 from tomato_dialog import TomatoDialog
+from calendar_dialog import CalendarDialog
 
 
 class MainWindow(QMainWindow):
@@ -31,14 +32,12 @@ class MainWindow(QMainWindow):
     def __init__(self):
         """
         主窗口的构造函数
+
+        :param cfg: 配置项
         """
 
         super(MainWindow, self).__init__()
         self.hide()
-
-        # 配置文件
-        self.cfg_path = "config.ini"
-        self.cfg = self.read_config()
 
         # 壁纸
         self.wallpapers = self.get_wallpapers()
@@ -60,53 +59,17 @@ class MainWindow(QMainWindow):
         self.menu = None
         self.sys_tray.activated.connect(self.show_menu)
 
-    def read_config(self):
-        """读取配置文件"""
-
-        cfg = {
-            "tomato": {
-                "work": 25,
-                "rest": 5
-            },
-            "wallpaper": {
-                "path": "",
-                "interval": 10
-            }
-        }
-
-        if os.path.exists(self.cfg_path):
-            config = configparser.ConfigParser()
-            config.read(self.cfg_path)
-
-            if config.has_option("tomato", "work"):
-                cfg["tomato"]["work"] = config.getint("tomato", "work")
-
-            if config.has_option("tomato", "rest"):
-                cfg["tomato"]["rest"] = config.getint("tomato", "rest")
-
-            if config.has_option("wallpaper", "path"):
-                cfg["wallpaper"]["path"] = config.get("wallpaper", "path")
-
-            if config.has_option("wallpaper", "interval"):
-                cfg["wallpaper"]["interval"] = config.getint("wallpaper", "interval")
-        else:
-            config = configparser.ConfigParser()
-            config.read_dict(cfg)
-            config.write(open(self.cfg_path, "w"))
-
-        return cfg
-
     def get_wallpapers(self):
         """取得壁纸列表"""
 
-        if self.cfg["wallpaper"]["path"]:
+        if qApp.cfg["wallpaper"]["path"]:
             ret = {}
 
-            for root, dirs, files in os.walk(self.cfg["wallpaper"]["path"]):
+            for root, dirs, files in os.walk(qApp.cfg["wallpaper"]["path"]):
                 for dir in dirs:
                     ret[dir] = []
                 for file in files:
-                    ret[root[len(self.cfg["wallpaper"]["path"]) + 1:]].append(os.path.join(root, file))
+                    ret[root[len(qApp.cfg["wallpaper"]["path"]) + 1:]].append(os.path.join(root, file))
 
             return ret
         else:
@@ -159,6 +122,11 @@ class MainWindow(QMainWindow):
         tomato = QAction(QIcon(":res/tomato.png"), "番茄钟", self)
         tomato.triggered.connect(self.show_tomato_dialog)
         menu.addAction(tomato)
+
+        # 记事本
+        note = QAction(QIcon(":res/note.png"), "记事本", self)
+        note.triggered.connect(self.show_calendar_dialog)
+        menu.addAction(note)
 
         # 分隔
         menu.addSeparator()
@@ -261,9 +229,79 @@ class MainWindow(QMainWindow):
 
         self.tomato_dlg.show()
 
+    def show_calendar_dialog(self):
+        """显示记事本对话框"""
+
+        dlg = CalendarDialog()
+        dlg.exec_()
+
+
+class CozyOffice(QApplication):
+    """应用主类"""
+
+    def __init__(self, argv):
+        """
+        构造函数
+
+        :param argv: 启动参数
+        """
+
+        super().__init__(argv)
+
+        # 配置文件
+        self.cfg_path = "config.ini"
+        self.cfg = self.read_config()
+
+    def read_config(self):
+        """读取配置文件"""
+
+        cfg = {
+            "tomato": {
+                "work": 25,
+                "rest": 5
+            },
+            "wallpaper": {
+                "path": "",
+                "interval": 10
+            }
+        }
+
+        if os.path.exists(self.cfg_path):
+            config = configparser.ConfigParser()
+            config.read(self.cfg_path)
+
+            if config.has_option("tomato", "work"):
+                cfg["tomato"]["work"] = config.getint("tomato", "work")
+
+            if config.has_option("tomato", "rest"):
+                cfg["tomato"]["rest"] = config.getint("tomato", "rest")
+
+            if config.has_option("wallpaper", "path"):
+                cfg["wallpaper"]["path"] = config.get("wallpaper", "path")
+
+            if config.has_option("wallpaper", "interval"):
+                cfg["wallpaper"]["interval"] = config.getint("wallpaper", "interval")
+        else:
+            self.save_config(cfg)
+
+        return cfg
+
+    def save_config(self, default=None):
+        """保存配置文件"""
+
+        config = configparser.ConfigParser()
+        if default:
+            config.read_dict(default)
+        else:
+            config.read_dict(self.cfg)
+            
+        config.write(open(self.cfg_path, "w"))
+
 
 def main():
-    app = QApplication(sys.argv)
+    """主函数"""
+
+    app = CozyOffice(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     dlg = MainWindow()
     sys.exit(app.exec_())
