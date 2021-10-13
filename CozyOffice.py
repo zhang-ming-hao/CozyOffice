@@ -17,7 +17,7 @@ import random
 import configparser
 from functools import partial
 from sqlalchemy import create_engine, inspect
-from PySide2.QtCore import QDir, QTimer
+from PySide2.QtCore import QDir, QTimer, QDateTime
 from PySide2.QtGui import QIcon, QCursor
 from PySide2.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QMenu, QAction, QFileDialog, QMessageBox
 
@@ -56,6 +56,11 @@ class MainWindow(QMainWindow):
 
         # 番茄钟
         self.tomato_dlg = TomatoDialog()
+
+        # 提醒计时器
+        self.remind_timer =  QTimer()
+        self.remind_timer.start(60*1000)
+        self.remind_timer.timeout.connect(self.check_remind)
 
         # 托盘菜单
         self.menu = None
@@ -221,7 +226,7 @@ class MainWindow(QMainWindow):
     def del_cur_wallpaper(self):
         """删除当前壁纸"""
 
-        if QMessageBox.question(self, '确认', '是否删除当前壁纸？') == QMessageBox.StandardButton.Yes:
+        if QMessageBox.question(None, '确认', '是否删除当前壁纸？') == QMessageBox.StandardButton.Yes:
             self.wallpapers[self.cur_classify].remove(self.cur_wallpaper)
             os.remove(self.cur_wallpaper)
             self.show_paper()
@@ -236,6 +241,15 @@ class MainWindow(QMainWindow):
 
         dlg = CalendarDialog()
         dlg.exec_()
+
+    def check_remind(self):
+        """检查是否有提醒"""
+
+        dt = QDateTime.currentDateTime()
+        
+        notes = qApp.get_remind(dt.toTime_t())
+        for note in notes:
+            QMessageBox.information(None, note["title"], note["content"])
 
 
 class CozyOffice(QApplication):
@@ -420,6 +434,17 @@ class CozyOffice(QApplication):
 
         sql = "delete from note where id=?"
         self.db.execute(sql, (id,))
+        
+    def get_remind(self, timestamp):
+        """取得要提醒的记事"""
+        
+        sql = (
+            "select * "
+            "from note "
+            "where timestamp>? and timestamp<? and remind=1"
+        )
+        
+        return self.db.execute(sql, (timestamp-60, timestamp)).all()
 
 
 def main():
