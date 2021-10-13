@@ -5,6 +5,7 @@
 惬意办工
 v0.1 实现壁纸切换功能
 v0.2 实现简单的番茄钟
+v0.3 实现简单的记事本
 """
 
 import os
@@ -15,6 +16,7 @@ import win32gui
 import random
 import configparser
 from functools import partial
+from sqlalchemy import create_engine, inspect
 from PySide2.QtCore import QDir, QTimer
 from PySide2.QtGui import QIcon, QCursor
 from PySide2.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QMenu, QAction, QFileDialog, QMessageBox
@@ -250,9 +252,10 @@ class CozyOffice(QApplication):
 
         # 配置文件
         self.cfg_path = "config.ini"
-        self.cfg = self.read_config()
+        self.cfg = self.init_config()
+        self.db = self.init_db()
 
-    def read_config(self):
+    def init_config(self):
         """读取配置文件"""
 
         cfg = {
@@ -296,6 +299,127 @@ class CozyOffice(QApplication):
             config.read_dict(self.cfg)
             
         config.write(open(self.cfg_path, "w"))
+
+    def init_db(self):
+        """初始化数据库"""
+
+        db = create_engine('sqlite:///data.db')
+        insepector = inspect(db)
+
+        # 记事表
+        if not insepector.has_table("note"):
+            sql = (
+                "CREATE TABLE note ( "
+	                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+	                "date TEXT, "
+                    "timestamp INTEGER, "
+	                "title TEXT, "
+	                "content TEXT, "
+	                "remind INTEGER "
+                ")"
+            )
+
+            db.execute(sql)
+
+        return db
+
+    def has_note(self, date):
+        """
+        查询是否存在指定日期的记事
+
+        :param date:   日期
+
+        :return: 存在返回True，否则返回False
+        """
+        
+        sql = (
+            "select count(*) as cnt "
+            "from note "
+            "where date=?"
+        )
+        rec = self.db.execute(sql, (date, )).first()
+
+        return rec['cnt'] > 0
+
+    def get_notes(self, date):
+        """
+        取得记事列表
+
+        :param date: 日期
+        :return: 数据库结果集
+        """
+
+        sql = (
+            "select * "
+            "from note "
+            "where date=?"
+        )
+
+        return self.db.execute(sql, (date,)).all()
+
+    def get_note(self, id):
+        """
+        取得记事信息
+
+        :param id: 标识
+        :return: 数据库记录
+        """
+
+        sql = (
+            "select * "
+            "from note "
+            "where id=?"
+        )
+        
+        return self.db.execute(sql, (id,)).first()
+
+    def add_note(self, date, timestamp, title, content, remind):
+        """
+        向数据库添加记事
+
+        :param date:    日期
+        :param timestamp:时间戳
+        :param title:   标题
+        :param content: 内容
+        :param remind:  提醒时间
+        """
+
+        sql = (
+            "INSERT INTO note(date, timestamp, title, content, remind) "
+            "VALUES(?, ?, ?, ?, ?)"
+        )
+        
+        self.db.execute(sql, (date, timestamp, title, content, remind))
+
+    def update_note(self, id, date, timestamp, title, content, remind):
+        """
+        更换数据库
+
+        :param id:      数据标识
+        :param date:    日期
+        :param timestamp:时间戳
+        :param title:   标题
+        :param content: 内容
+        :param remind:  提醒时间
+        """
+
+        sql = (
+            "UPDATE note "
+            "SET date=?, timestamp=?, title=?, content=?, remind=?"
+            "WHERE id=?"
+        )
+
+        self.db.execute(sql, (date, timestamp, title, content, remind, id))
+
+    def delete_note(self, id):
+        """
+        删除记事
+
+        :param id: 标识
+        """
+
+        sql = "delete from note where id=?"
+        self.db.execute(sql, (id,))
 
 
 def main():
