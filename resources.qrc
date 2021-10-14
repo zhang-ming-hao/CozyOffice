@@ -1,5 +1,6 @@
 <RCC>
   <qresource>
+    <file>res/hotkey.png</file>
     <file>res/ban.png</file>
     <file>res/xiu.png</file>
     <file>res/note.png</file>

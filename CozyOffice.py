@@ -16,6 +16,7 @@ import win32gui
 import random
 import configparser
 from functools import partial
+from system_hotkey import SystemHotkey
 from sqlalchemy import create_engine, inspect
 from PySide2.QtCore import QDir, QTimer, QDateTime
 from PySide2.QtGui import QIcon, QCursor
@@ -24,6 +25,7 @@ from PySide2.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QMenu,
 import resources_rc
 from tomato_dialog import TomatoDialog
 from calendar_dialog import CalendarDialog
+from hotkey_dialog import HotKeyDialog
 
 
 class MainWindow(QMainWindow):
@@ -58,7 +60,7 @@ class MainWindow(QMainWindow):
         self.tomato_dlg = TomatoDialog()
 
         # 提醒计时器
-        self.remind_timer =  QTimer()
+        self.remind_timer = QTimer()
         self.remind_timer.start(60*1000)
         self.remind_timer.timeout.connect(self.check_remind)
 
@@ -135,6 +137,11 @@ class MainWindow(QMainWindow):
         note.triggered.connect(self.show_calendar_dialog)
         menu.addAction(note)
 
+        # 热键
+        hotkey = QAction(QIcon(":res/hotkey.png"), "热键", self)
+        hotkey.triggered.connect(self.show_hotkey_dialog)
+        menu.addAction(hotkey)
+
         # 分隔
         menu.addSeparator()
 
@@ -206,7 +213,7 @@ class MainWindow(QMainWindow):
         """开始自动切换"""
 
         self.switch_timer = QTimer()
-        self.switch_timer.start(self.cfg["wallpaper"]["interval"] * 1000 * 60)
+        self.switch_timer.start(qApp.cfg["wallpaper"]["interval"] * 1000 * 60)
         self.switch_timer.timeout.connect(self.show_paper)
 
     def end_switch(self):
@@ -242,6 +249,12 @@ class MainWindow(QMainWindow):
         dlg = CalendarDialog()
         dlg.exec_()
 
+    def show_hotkey_dialog(self):
+        """显示热键对话框"""
+
+        dlg = HotKeyDialog()
+        dlg.exec_()
+
     def check_remind(self):
         """检查是否有提醒"""
 
@@ -268,6 +281,7 @@ class CozyOffice(QApplication):
         self.cfg_path = "config.ini"
         self.cfg = self.init_config()
         self.db = self.init_db()
+        self.hk = self.init_hotkey()
 
     def init_config(self):
         """读取配置文件"""
@@ -330,6 +344,17 @@ class CozyOffice(QApplication):
 	                "title TEXT, "
 	                "content TEXT, "
 	                "remind INTEGER "
+                ")"
+            )
+
+            db.execute(sql)
+
+        # 热键表
+        if not insepector.has_table("hotkey"):
+            sql = (
+                "CREATE TABLE hotkey ( "
+                "hotkey TEXT PRIMARY KEY, "
+                "cmd TEXT "
                 ")"
             )
 
@@ -445,6 +470,63 @@ class CozyOffice(QApplication):
         )
         
         return self.db.execute(sql, (timestamp-60, timestamp)).all()
+
+    def get_hotkeys(self):
+        """查询数据库中的热键"""
+
+        sql = (
+            "select * from hotkey"
+        )
+        res = self.db.execute(sql).all()
+
+        hks = []
+        for rec in res:
+            hks.append([rec["hotkey"], rec["cmd"]])
+
+        return hks
+
+    def on_hotkey(self, event, hotkey, args):
+        """热键回调函数"""
+
+        os.system(f"start {args[0][0]}")
+
+    def init_hotkey(self):
+        """初始化热键"""
+
+        hk = SystemHotkey(consumer=self.on_hotkey)
+
+        hks = self.get_hotkeys()
+        for key, cmd in hks:
+            keys = key.split(" + ")
+            hk.register([key.lower() for key in keys], cmd, overwrite=True)
+        
+        return hk
+
+    def register_hotkey(self, hotkey, cmd):
+        """注册热键"""
+
+        if hotkey and cmd:
+            keys = hotkey.split(" + ")
+
+            self.hk.register([key.lower() for key in keys], cmd, overwrite=True)
+
+            sql = (
+                "INSERT INTO hotkey(hotkey, cmd) "
+                "VALUES(?, ?)"
+            )
+            self.db.execute(sql, (hotkey, cmd))
+
+    def unregister_hotkey(self, hotkey):
+        """取消热键"""
+
+        if hotkey:
+            keys = hotkey.split(" + ")
+            self.hk.unregister([key.lower() for key in keys])
+            
+            sql = (
+                "delete from hotkey where hotkey=?"
+            )
+            self.db.execute(sql, (hotkey, ))
 
 
 def main():
