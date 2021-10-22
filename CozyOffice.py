@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
         self.cur_classify = ""
         self.cur_wallpaper = ""
         self.switch_timer = None
-        self.show_paper("")
+        self.start_switch()
 
         # 托盘图标
         self.sys_tray = QSystemTrayIcon(self)  # 创建托盘
@@ -204,10 +204,10 @@ class MainWindow(QMainWindow):
         # 5.关闭注册表键
         win32api.RegCloseKey(key)
 
-        if self.switch_timer:
-            # 重启定时器
-            self.end_switch()
-            self.start_switch()
+        # if self.switch_timer:
+        #     # 重启定时器
+        #     self.end_switch()
+        #     self.start_switch()
 
     def start_switch(self):
         """开始自动切换"""
@@ -215,6 +215,8 @@ class MainWindow(QMainWindow):
         self.switch_timer = QTimer()
         self.switch_timer.start(qApp.cfg["wallpaper"]["interval"] * 1000 * 60)
         self.switch_timer.timeout.connect(self.show_paper)
+
+        self.show_paper("")
 
     def end_switch(self):
         """停止自动切换"""
